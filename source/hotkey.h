@@ -41,6 +41,7 @@ EXTERN_SCRIPT;  // For g_script.
 #define HOTKEY_ID_ON                   0x01  // This and the next 2 are used only for convenience by ConvertAltTab().
 #define HOTKEY_ID_OFF                  0x02
 #define HOTKEY_ID_TOGGLE               0x03
+#define HOTKEY_ID_DELETE               0x04
 #define IS_ALT_TAB(id) (id > HOTKEY_ID_MAX && id < HOTKEY_ID_INVALID)
 
 #define COMPOSITE_DELIMITER _T(" & ")
@@ -202,6 +203,7 @@ public:
 	#define HOTKEY_EL_ALTTAB             4
 	#define HOTKEY_EL_NOTEXIST           5
 	#define HOTKEY_EL_NOTEXISTVARIANT    6
+	#define HOTKEY_EL_DELETED            7	
 	#define HOTKEY_EL_WIN9X              50
 	#define HOTKEY_EL_NOREG              51
 	#define HOTKEY_EL_MAXCOUNT           98 // 98 allows room for other ErrorLevels to be added in between.
@@ -267,12 +269,14 @@ public:
 		return false;
 	}
 
-	bool IsCompletelyDisabled()
+	bool IsCompletelyDeleted() { return IsCompletelyDisabled(true); }
+	
+	bool IsCompletelyDisabled(bool aCheckIfDeleted = false)
 	{
 		if (mHookAction) // Alt tab hotkeys are disabled completely if and only if the parent is disabled.
 			return !mParentEnabled;
 		for (HotkeyVariant *vp = mFirstVariant; vp; vp = vp->mNextVariant)
-			if (vp->mEnabled)
+			if (aCheckIfDeleted ? vp->mJumpToLabel != NULL : vp->mEnabled)
 				return false;
 		return true;
 	}
@@ -306,6 +310,7 @@ public:
 			if (!_tcsicmp(aBuf, _T("On"))) return HOTKEY_ID_ON;
 			if (!_tcsicmp(aBuf, _T("Off"))) return HOTKEY_ID_OFF;
 			if (!_tcsicmp(aBuf, _T("Toggle"))) return HOTKEY_ID_TOGGLE;
+			if (!_tcsicmp(aBuf, _T("Delete"))) return HOTKEY_ID_DELETE;
 		}
 		return 0;
 	}

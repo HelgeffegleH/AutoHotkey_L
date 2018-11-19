@@ -1092,6 +1092,7 @@ ResultType Hotkey::Dynamic(LPTSTR aHotkeyName, LPTSTR aLabelName, LPTSTR aOption
 	case HOTKEY_ID_ON:
 	case HOTKEY_ID_OFF:
 	case HOTKEY_ID_TOGGLE:
+	case HOTKEY_ID_DELETE:
 		if (!hk)
 			RETURN_HOTKEY_ERROR(HOTKEY_EL_NOTEXIST, ERR_NONEXISTENT_HOTKEY, aHotkeyName);
 		if (!(variant || hk->mHookAction)) // mHookAction (alt-tab) hotkeys don't need a variant that matches the current criteria.
@@ -1099,6 +1100,8 @@ ResultType Hotkey::Dynamic(LPTSTR aHotkeyName, LPTSTR aLabelName, LPTSTR aOption
 			// already exists, it seems best to strictly require a matching variant rather than falling back
 			// onto some "default variant" such as the global variant (if any).
 			RETURN_HOTKEY_ERROR(HOTKEY_EL_NOTEXISTVARIANT, ERR_NONEXISTENT_VARIANT, aHotkeyName);
+		if (aHookAction != HOTKEY_ID_OFF && variant && variant->mJumpToLabel == NULL)
+			RETURN_HOTKEY_ERROR(HOTKEY_EL_DELETED, ERR_DELETED_CALLBACK, aHotkeyName); // do not allow a hotkey which has deleted its callback to be turned on.
 		if (aHookAction == HOTKEY_ID_TOGGLE)
 			aHookAction = hk->mHookAction
 				? (hk->mParentEnabled ? HOTKEY_ID_OFF : HOTKEY_ID_ON) // Enable/disable parent hotkey (due to alt-tab being a global hotkey).
@@ -1108,9 +1111,13 @@ ResultType Hotkey::Dynamic(LPTSTR aHotkeyName, LPTSTR aLabelName, LPTSTR aOption
 			if (hk->mHookAction ? hk->EnableParent() : hk->Enable(*variant))
 				update_all_hotkeys = true; // Do it this way so that any previous "true" value isn't lost.
 		}
-		else
+		else	// OFF or DELETE
+		{
 			if (hk->mHookAction ? hk->DisableParent() : hk->Disable(*variant))
 				update_all_hotkeys = true; // Do it this way so that any previous "true" value isn't lost.
+			if (aHookAction == HOTKEY_ID_DELETE && variant)
+				variant->mJumpToLabel = NULL; // handles refrence counting.
+		}
 		break;
 
 	default: // aHookAction is 0 or an AltTab action.  COMMAND: Hotkey, Name, Label|AltTabAction
@@ -1250,6 +1257,9 @@ ResultType Hotkey::Dynamic(LPTSTR aHotkeyName, LPTSTR aLabelName, LPTSTR aOption
 			case 'O': // v1.0.38.02.
 				if (ctoupper(cp[1]) == 'N') // Full validation for maintainability.
 				{
+					if (!hk->mHookAction								// It is not an AltTab action
+						&& variant && variant->mJumpToLabel == NULL)	// and the variant has no assiciated callback, it has been deleted.
+						RETURN_HOTKEY_ERROR(HOTKEY_EL_DELETED, ERR_DELETED_CALLBACK, aHotkeyName); // do not allow a hotkey which has deleted its callback to be turned on unless it is turning on an alttab action.
 					++cp; // Omit the 'N' from further consideration in case it ever becomes a valid option letter.
 					if (hk->mHookAction ? hk->EnableParent() : hk->Enable(*variant)) // Under these conditions, earlier logic has ensured variant is non-NULL.
 						update_all_hotkeys = true; // Do it this way so that any previous "true" value isn't lost.
@@ -2408,7 +2418,9 @@ LPTSTR Hotkey::ToText(LPTSTR aBuf, int aBufSize, bool aAppendNewline)
 	}
 
 	LPTSTR enabled_str;
-	if (IsCompletelyDisabled()) // Takes into account alt-tab vs. non-alt-tab, etc.
+	if (IsCompletelyDeleted())
+		enabled_str = _T("DEL");	
+	else if (IsCompletelyDisabled()) // Takes into account alt-tab vs. non-alt-tab, etc.
 		enabled_str = _T("OFF");
 	else if (mHookAction && mParentEnabled) // It's completely "on" in this case.
 		enabled_str = _T("");
