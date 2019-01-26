@@ -402,6 +402,9 @@ struct ArgStruct
 	ExprTokenType *postfix;  // An array of tokens in postfix order.
 };
 
+#define FLOAT_COMPARE_TOLERANCE (1.0 / 4503599627370496.0) // 2^-52
+BOOL fcmp(double a, double b, double tol = FLOAT_COMPARE_TOLERANCE);
+
 #define BIF_DECL_PARAMS ResultToken &aResultToken, ExprTokenType *aParam[], int aParamCount
 
 // The following macro is used for definitions and declarations of built-in functions:

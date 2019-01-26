@@ -14025,3 +14025,20 @@ ResultType Script::ActionExec(LPTSTR aAction, LPTSTR aParams, LPTSTR aWorkingDir
 		CloseHandle(hprocess); // Required to avoid memory leak.
 	return OK;
 }
+
+BOOL fcmp(double a, double b, double tol)
+{
+	// returns 1 if the relative differance between a and b is less than tol
+	// absoulute value macro:
+#define FABS(d) ((d) > 0.0 ? (d) : -(d)) 
+	double x = FABS(a);
+	double y = FABS(b);
+	double max = x >= y ? x : y;					// max value
+	if (max == 0.0) 
+		return 1;									// input is (+/-) 0.0, equal.
+
+	double diff = (a - b);							// exact differance
+	double rel_diff = FABS(diff) / max;				// realtive differance
+	return rel_diff <= tol;
+#undef FABS
+}

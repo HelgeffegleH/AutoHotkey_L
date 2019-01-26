@@ -1177,10 +1177,10 @@ LPTSTR Line::ExpandExpression(int aArgIndex, ResultType &aResult, ResultToken *a
 					if (this_token.symbol == SYM_FLOORDIVIDE) // Like Python, the result is floor()'d, moving to the nearest integer to the left on the number line.
 						this_token.value_double = qmathFloor(this_token.value_double); // Result is always a double when at least one of the inputs was a double.
 					break;
-				case SYM_EQUALCASE: // Same behavior as SYM_EQUAL for numeric operands.
-				case SYM_EQUAL:    this_token.value_int64 = left_double == right_double; break;
-				case SYM_NOTEQUALCASE: // Same behavior as SYM_NOTEQUAL for numeric operands.
-				case SYM_NOTEQUAL: this_token.value_int64 = left_double != right_double; break;
+				case SYM_EQUALCASE: this_token.value_int64 = left_double == right_double; break;		// Exact comparison
+				case SYM_EQUAL:    this_token.value_int64 = fcmp(left_double, right_double); break;		// Inexact comparison
+				case SYM_NOTEQUALCASE: this_token.value_int64 = left_double != right_double; break;		// Exact comparison
+				case SYM_NOTEQUAL: this_token.value_int64 = !fcmp(left_double, right_double); break;	// Inexact comparison
 				case SYM_GT:       this_token.value_int64 = left_double > right_double; break;
 				case SYM_LT:       this_token.value_int64 = left_double < right_double; break;
 				case SYM_GTOE:     this_token.value_int64 = left_double >= right_double; break;
