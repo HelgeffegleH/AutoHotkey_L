@@ -4643,6 +4643,8 @@ ResultType Script::ParseAndAddLine(LPTSTR aLineText, int aBufSize, ActionTypeTyp
 				aActionType = ACT_LOOP_READ;
 			else if (!_tcsicmp(_T("Parse"), action_args))
 				aActionType = ACT_LOOP_PARSE;
+			else if (!_tcsicmp(_T("ParseCSV"), action_args))
+				aActionType = ACT_LOOP_PARSE_CSV;
 			*cp = orig_char; // Undo the temporary termination.
 			if (aActionType != ACT_LOOP) // Loop sub-type discovered above.
 				// Set action_args to the start of the actual args, skipping the optional delimiter.
@@ -10252,6 +10254,7 @@ ResultType Line::ExecUntil(ExecUntilMode aMode, ResultToken *aResultToken, Line 
 		case ACT_LOOP_REG:
 		case ACT_LOOP_READ:
 		case ACT_LOOP_PARSE:
+		case ACT_LOOP_PARSE_CSV:
 		case ACT_FOR:
 		case ACT_WHILE:
 		{
@@ -10327,12 +10330,10 @@ ResultType Line::ExecUntil(ExecUntilMode aMode, ResultToken *aResultToken, Line 
 				result = line->PerformLoopFor(aResultToken, continue_main_loop, jump_to_line, until);
 				break;
 			case ACT_LOOP_PARSE:
-				// The phrase "csv" is unique enough since user can always rearrange the letters
-				// to do a literal parse using C, S, and V as delimiters:
-				if (_tcsicmp(ARG2, _T("CSV")))
-					result = line->PerformLoopParse(aResultToken, continue_main_loop, jump_to_line, until);
-				else
-					result = line->PerformLoopParseCSV(aResultToken, continue_main_loop, jump_to_line, until);
+				result = line->PerformLoopParse(aResultToken, continue_main_loop, jump_to_line, until);
+				break;
+			case ACT_LOOP_PARSE_CSV:	
+				result = line->PerformLoopParseCSV(aResultToken, continue_main_loop, jump_to_line, until);
 				break;
 			case ACT_LOOP_READ:
 				{
@@ -11591,7 +11592,7 @@ ResultType Line::PerformLoopParseCSV(ResultToken *aResultToken, bool &aContinueM
 {
 	if (!*ARG1) // Since the input variable's contents are blank, the loop will execute zero times.
 		return OK;
-
+	
 	// See comments in PerformLoopParse() for details.
 	size_t space_needed = ArgLength(1) + 1;  // +1 for the zero terminator.
 	LPTSTR stack_buf, buf;
@@ -11608,8 +11609,15 @@ ResultType Line::PerformLoopParseCSV(ResultToken *aResultToken, bool &aContinueM
 	}
 	_tcscpy(buf, ARG1); // Make the copy.
 
+	// Only one delimiter and qualifier is allowed.
+	if (_tcslen(ARG2) > 1) 
+		return LineError(ERR_PARAM2_INVALID, FAIL, ARG2);
+	if (_tcslen(ARG3) > 1)
+		return LineError(ERR_PARAM2_INVALID, FAIL, ARG3);
+	TCHAR delimiter = *ARG2 ? *ARG2 : ','; 
+	TCHAR qualifier = *ARG3 ? *ARG3 : '"';
 	TCHAR omit_list[512];
-	tcslcpy(omit_list, ARG3, _countof(omit_list));
+	tcslcpy(omit_list, ARG4, _countof(omit_list));
 
 	ResultType result;
 	Line *jump_to_line;
@@ -11620,7 +11628,7 @@ ResultType Line::PerformLoopParseCSV(ResultToken *aResultToken, bool &aContinueM
 
 	for (field = buf;;)
 	{
-		if (*field == '"')
+		if (*field == qualifier)
 		{
 			// For each field, check if the optional leading double-quote is present.  If it is,
 			// skip over it since we always know it's the one that marks the beginning of
@@ -11635,7 +11643,7 @@ ResultType Line::PerformLoopParseCSV(ResultToken *aResultToken, bool &aContinueM
 
 		for (field_end = field;;)
 		{
-			if (   !(field_end = _tcschr(field_end, field_is_enclosed_in_quotes ? '"' : ','))   )
+			if (   !(field_end = _tcschr(field_end, field_is_enclosed_in_quotes ? qualifier : delimiter))   )
 			{
 				// This is the last field in the string, so set field_end to the position of
 				// the zero terminator instead:
@@ -11647,7 +11655,7 @@ ResultType Line::PerformLoopParseCSV(ResultToken *aResultToken, bool &aContinueM
 				// The quote discovered above marks the end of the string if it isn't followed
 				// by another quote.  But if it is a pair of quotes, replace it with a single
 				// literal double-quote and then keep searching for the real ending quote:
-				if (field_end[1] == '"')  // A pair of quotes was encountered.
+				if (field_end[1] == qualifier)  // A pair of quotes was encountered.
 				{
 					tmemmove(field_end, field_end + 1, _tcslen(field_end + 1) + 1); // +1 to include terminator.
 					++field_end; // Skip over the literal double quote that we just produced.
@@ -11700,7 +11708,7 @@ ResultType Line::PerformLoopParseCSV(ResultToken *aResultToken, bool &aContinueM
 
 		if (!saved_char) // The last item in the list has just been processed, so the loop is done.
 			break;
-		if (saved_char == ',') // Set "field" to be the position of the next field.
+		if (saved_char == delimiter) // Set "field" to be the position of the next field.
 			field = field_end + 1;
 		else // saved_char must be a double-quote char.
 		{
@@ -11708,7 +11716,7 @@ ResultType Line::PerformLoopParseCSV(ResultToken *aResultToken, bool &aContinueM
 			if (!*field) // No more fields occur after this one.
 				break;
 			// Find the next comma, which must be a real delimiter since we're in between fields:
-			if (   !(field = _tcschr(field, ','))   ) // No more fields.
+			if (   !(field = _tcschr(field, delimiter))   ) // No more fields.
 				break;
 			// Set it to be the first character of the next field, which might be a double-quote
 			// or another comma (if the field is empty).
