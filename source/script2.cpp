@@ -16078,7 +16078,9 @@ BIF_DECL(BIF_VarSetCapacity)
 			// it's an input var rather than an output var, so check if it has been initialized:
 			// v1.1.11.01: Support VarSetCapacity(var) as a means for the script to check if it
 			// has initialized a var.  In other words, don't show a warning even in that case.
-			//var.MaybeWarnUninitialized();
+			// Update 2019-07-06: changing back to warning since this was never documented and doesn't
+			// work reliably anyways.
+			var.MaybeWarnUninitialized();
 		}
 
 		if (aResultToken.value_int64 = var.ByteCapacity()) // Don't subtract 1 here in lieu doing it below (avoids underflow).
