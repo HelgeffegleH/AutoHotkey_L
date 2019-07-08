@@ -11613,7 +11613,7 @@ ResultType Line::PerformLoopParseCSV(ResultToken *aResultToken, bool &aContinueM
 	if (_tcslen(ARG2) > 1) 
 		return LineError(ERR_PARAM2_INVALID, FAIL, ARG2);
 	if (_tcslen(ARG3) > 1)
-		return LineError(ERR_PARAM2_INVALID, FAIL, ARG3);
+		return LineError(ERR_PARAM3_INVALID, FAIL, ARG3);
 	TCHAR delimiter = *ARG2 ? *ARG2 : ','; 
 	TCHAR qualifier = *ARG3 ? *ARG3 : '"';
 	TCHAR omit_list[512];
