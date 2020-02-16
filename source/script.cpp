@@ -1577,7 +1577,7 @@ UINT Script::LoadFromFile()
 	// That's why the above is done prior to adding the EXIT lines and other things below.
 
 	// Scan for undeclared local variables which are named the same as a global variable.
-	// This loop has two purposes (but it's all handled in PreprocessLocalVars()):
+	// This loop has three purposes (but it's all handled in PreprocessLocalVars()):
 	//
 	//  1) Allow super-global variables to be referenced above the point of declaration.
 	//     This is a bit of a hack to work around the fact that variable references are
@@ -1585,9 +1585,11 @@ UINT Script::LoadFromFile()
 	//
 	//  2) Warn the user (if appropriate) since they probably meant it to be global.
 	//
-	auto mod = g_CurrentModule; // PreprocessLocalVars might change this
+	//	3) Detect name collision between variables and modules.
+	auto mod = g_CurrentModule; // PreprocessLocal/GlobalVars might change this
 	if (!PreprocessLocalVars()
-		|| !PreprocessLocalVars(mHotFuncs))
+		|| !PreprocessLocalVars(mHotFuncs)
+		|| !PreprocessGlobalVars())
 		return LOADING_FAILED;
 	g_CurrentModule = mod;
 	if (mHotFuncs.mItem)
@@ -13847,6 +13849,32 @@ void Script::MaybeWarnLocalSameAsGlobal(UserFunc &func, Var &var)
 	
 	ScriptWarning(g_Warn_LocalSameAsGlobal, WARNING_LOCAL_SAME_AS_GLOBAL, buf, line);
 }
+
+ResultType Script::PreprocessGlobalVars()
+{
+	// Ensure there are no name collisions between any global variables and modules.
+	ResultType result;
+	FOR_EACH_MODULE(mod)
+	{
+		mod->SetCurrentModule(); // The below calls relies on this being set correctly.
+		if (	!(result = PreprocessGlobalVars(mod->mVar, mod->mVarCount))
+			||	!(result = PreprocessGlobalVars(mod->mLazyVar, mod->mLazyVarCount)) )
+			return result;
+	}
+	return OK;
+}
+
+ResultType Script::PreprocessGlobalVars(Var** aVarList, int aVarCount)
+{
+	for (int v = 0; v < aVarCount; ++v)
+	{
+		Var& var = *aVarList[v];
+		if (!g_CurrentModule->ValidateName(var.mName)) // Variable names cannot collide with the name of any nested module or reserved module name.
+			return DisplayNameError(_T("The following reserved word must not be used as a %s name:\n\"%-1.300s\""), DISPLAY_VAR_ERROR, var.mName);
+	}
+	return OK;
+}
+
 
 ResultType Script::PreprocessLocalVars()
 {
