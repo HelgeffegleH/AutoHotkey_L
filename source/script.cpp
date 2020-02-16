@@ -1585,9 +1585,11 @@ UINT Script::LoadFromFile()
 	//
 	//  2) Warn the user (if appropriate) since they probably meant it to be global.
 	//
-	if (!PreprocessLocalVars(mFuncs)
+	auto mod = g_CurrentModule; // PreprocessLocalVars might change this
+	if (!PreprocessLocalVars()
 		|| !PreprocessLocalVars(mHotFuncs))
 		return LOADING_FAILED;
+	g_CurrentModule = mod;
 	if (mHotFuncs.mItem)
 		free(mHotFuncs.mItem);
 	// Resolve any unresolved base classes.
@@ -13846,6 +13848,17 @@ void Script::MaybeWarnLocalSameAsGlobal(UserFunc &func, Var &var)
 	ScriptWarning(g_Warn_LocalSameAsGlobal, WARNING_LOCAL_SAME_AS_GLOBAL, buf, line);
 }
 
+ResultType Script::PreprocessLocalVars()
+{
+	ResultType result;
+	FOR_EACH_MODULE(mod)
+	{
+		if (!(result = PreprocessLocalVars(mod->mFuncs)))
+			return result;
+	}
+	return OK;
+}
+
 
 
 ResultType Script::PreprocessLocalVars(FuncList &aFuncs)
@@ -13864,6 +13877,7 @@ ResultType Script::PreprocessLocalVars(FuncList &aFuncs)
 		// No pre-processing is needed for this func if it is force-local.  However, if only
 		// the outer func is force-local, we still need to process upvars (but super-globals
 		// and warnings are skipped in that case).
+		func.mJumpToLine->mModule->SetCurrentModule();
 		if (  !(func.mDefaultVarType & VAR_FORCE_LOCAL)  )
 		{
 			// For error-reporting, using the open brace vs. mJumpToLine itself seems less 
@@ -13917,6 +13931,8 @@ ResultType Script::PreprocessLocalVars(UserFunc &aFunc, Var **aVarList, int &aVa
 	for (int v = 0; v < aVarCount; ++v)
 	{
 		Var &var = *aVarList[v];
+		if (!g_CurrentModule->ValidateName(var.mName)) // Variable names cannot collide with the name of any nested module or reserved module name.
+			return DisplayNameError(_T("The following reserved word must not be used as a %s name:\n\"%-1.300s\""), DISPLAY_VAR_ERROR, var.mName);
 		if (var.IsDeclared()) // Not a candidate for an upvar, super-global or warning.
 			continue;
 
