@@ -560,7 +560,7 @@ public:
 	#define VALIDATENAME_SUBJECT_INDEX(n) (n-1)
 	#define VALIDATENAME_SUBJECTS { _T("variable"), _T("function"), _T("class"), _T("group"), _T("method"), SMODULES_DECLARATION_KEYWORD_NAME_LC }
 	static ResultType ValidateName(LPCTSTR aName, int aDisplayError = DISPLAY_VAR_ERROR, ScriptModule *aModule = NULL);
-
+	void MarkReplaced();
 	LPTSTR ObjectToText(LPTSTR aName, LPTSTR aBuf, int aBufSize);
 	LPTSTR ToText(LPTSTR aBuf, int aBufSize, bool aAppendNewline)
 	// Caller must ensure that Type() == VAR_NORMAL.
