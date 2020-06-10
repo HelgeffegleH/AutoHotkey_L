@@ -14475,7 +14475,7 @@ BIF_DECL(BIF_Hotkey)
 			if (functor = TokenToObject(*aParam[1]))
 				functor->AddRef();
 			else if (  !(hook_action = Hotkey::ConvertAltTab(aParam1, true))  )
-				functor = StringToLabelOrFunctor(aParam1);
+				functor = StringToFunctor(aParam1);
 			if (!functor)
 			{
 				// Search for a match in the hotkey variants' "original callbacks".

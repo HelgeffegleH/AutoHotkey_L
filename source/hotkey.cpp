@@ -2703,7 +2703,7 @@ BIF_DECL(BIF_Hotstring)
 			action_obj->AddRef();
 		else // Caller did not specify an object, so must specify a function or label name.
 			if (   execute_action // Caller specified 'X' option (which is ignored when passing an object).
-				&& !(action_obj = StringToLabelOrFunctor(action))   ) // No valid label or function found.
+				&& !(action_obj = StringToFunctor(action))   ) // No valid function found.
 				_f_throw(ERR_PARAM2_INVALID, action);
 	}
 
