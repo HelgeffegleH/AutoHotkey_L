@@ -2404,8 +2404,8 @@ process_completed_line:
 				LPTSTR hotstring_name = SimpleHeap::Malloc(buf);
 				if (!hotstring_name)
 					return FAIL;
-				if (!Hotstring::AddHotstring(hotstring_name, mLastHotFunc, hotstring_options
-					, hotstring_start, hotstring_execute || hotkey_uses_otb ? _T("") : hotkey_flag, has_continuation_section))
+				if (!Hotstring::AddHotstring(hotstring_name, mLastHotFunc,
+ hotstring_options, hotstring_start, hotstring_execute || hotkey_uses_otb ? _T("") : hotkey_flag, has_continuation_section))
 					return FAIL;
 				if (!mLastHotFunc)
 					goto continue_main_loop;
@@ -6206,9 +6206,9 @@ ResultType Script::DefineFunc(LPTSTR aBuf, Var *aFuncGlobalVar[], bool aStatic, 
 		for (int i = 0; i < Hotkey::sHotkeyCount; ++i)
 		{
 			for (HotkeyVariant* v = Hotkey::shk[i]->mFirstVariant; v; v = v->mNextVariant)
-				if (v->mJumpToLabel == last_hotfunc)
+				if (v->mCallback == last_hotfunc)
 				{
-					v->mJumpToLabel = &func;
+					v->mCallback = &func;
 					v->mOriginalCallback = &func;	// To make scripts more maintainable and to
 													// make the hotkey() function more consistent.
 													// For example,
@@ -6227,12 +6227,12 @@ ResultType Script::DefineFunc(LPTSTR aBuf, Var *aFuncGlobalVar[], bool aStatic, 
 		// Check hotstrings as well (even if a hotkey was found):
 		for (int i = Hotstring::sHotstringCount - 1; i >= 0; --i) // Start with the last one defined, for performance.
 		{
-			if (Hotstring::shs[i]->mJumpToLabel != last_hotfunc)
+			if (Hotstring::shs[i]->mCallback != last_hotfunc)
 				// This hotstring has a function or is auto-replace.
 				// Since hotstrings are listed in order of definition and we're iterating in
 				// the reverse order, there's no need to continue.
 				break;
-			Hotstring::shs[i]->mJumpToLabel = &func;
+			Hotstring::shs[i]->mCallback = &func;
 		}
 
 		if (func.mMinParams > 1 || (func.mParamCount == 0 && !func.mIsVariadic))
@@ -11102,7 +11102,7 @@ ResultType HotkeyCriterion::Eval(LPTSTR aHotkeyName)
 	{
 		ExprTokenType param = aHotkeyName;
 		__int64 retval;
-		result = LabelPtr(Callback)->ExecuteInNewThread(_T("#If"), &param, 1, &retval);
+		result = IObjectPtr(Callback)->ExecuteInNewThread(_T("#If"), &param, 1, &retval);
 		if (result != FAIL)
 			result = retval ? CONDITION_TRUE : CONDITION_FALSE;
 	}

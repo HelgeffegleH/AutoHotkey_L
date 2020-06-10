@@ -2578,7 +2578,7 @@ ResultType Label::Invoke(IObject_Invoke_PARAMS_DECL)
 	return Execute();
 }
 
-ResultType LabelPtr::ExecuteInNewThread(TCHAR *aNewThreadDesc, ExprTokenType *aParamValue, int aParamCount, __int64 *aRetVal) const
+ResultType IObjectPtr::ExecuteInNewThread(TCHAR *aNewThreadDesc, ExprTokenType *aParamValue, int aParamCount, __int64 *aRetVal) const
 {
 	DEBUGGER_STACK_PUSH(aNewThreadDesc)
 	ResultType result = CallMethod(mObject, mObject, nullptr, aParamValue, aParamCount, aRetVal);
@@ -2587,7 +2587,7 @@ ResultType LabelPtr::ExecuteInNewThread(TCHAR *aNewThreadDesc, ExprTokenType *aP
 }
 
 
-Label *LabelPtr::ToLabel() const
+Label *IObjectPtr::ToLabel() const
 {
 	// Comparing [[vfptr]] produces smaller code and is perhaps 10% faster than dynamic_cast<>.
 	void *vfptr = *(void **)mObject;
@@ -2596,12 +2596,12 @@ Label *LabelPtr::ToLabel() const
 	return nullptr;
 }
 
-Func *LabelPtr::ToFunc() const
+Func *IObjectPtr::ToFunc() const
 {
 	return dynamic_cast<Func *>(mObject);
 }
 
-LPCTSTR LabelPtr::Name() const
+LPCTSTR IObjectPtr::Name() const
 {
 	if (auto func = ToFunc()) return func->mName;
 	if (auto lbl = ToLabel()) return lbl->mName;

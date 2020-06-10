@@ -76,8 +76,8 @@ HotkeyCriterion *FindHotkeyIfExpr(LPTSTR aExpr);
 
 struct HotkeyVariant
 {
-	LabelRef mJumpToLabel;
-	LabelPtr mOriginalCallback;	// This is the callback set at load time. 
+	IObjectRef mCallback;
+	IObjectPtr mOriginalCallback;	// This is the callback set at load time. 
 								// Keep it to allow restoring it via hotkey() function if changed
 								// during run time.
 	HotkeyCriterion *mHotCriterion;
@@ -154,7 +154,7 @@ private:
 
 	// For now, constructor & destructor are private so that only static methods can create new
 	// objects.  This allow proper tracking of which OS hotkey IDs have been used.
-	Hotkey(HotkeyIDType aID, IObject *aJumpToLabel, HookActionType aHookAction, LPTSTR aName, bool aSuffixHasTilde);
+	Hotkey(HotkeyIDType aID, IObject * aCallback, HookActionType aHookAction, LPTSTR aName, bool aSuffixHasTilde);
 	~Hotkey() {if (mIsRegistered) Unregister();}
 
 public:
@@ -193,7 +193,7 @@ public:
 	bool mConstructedOK;
 	
 	// 64- or 32-bit members:
-	LPTSTR mName; // Points to the label name for static hotkeys, or a dynamically-allocated string for dynamic hotkeys.
+	LPTSTR mName; // Points to the name for static hotkeys, or a dynamically-allocated string for dynamic hotkeys.
 	HotkeyVariant *mFirstVariant, *mLastVariant; // v1.0.42: Linked list of variant hotkeys created via #IfWin directives.
 
 	// Make sHotkeyCount an alias for sNextID.  Make it const to enforce modifying the value in only one way:
@@ -213,10 +213,10 @@ public:
 	#define HOTKEY_EL_MAXCOUNT           98 // 98 allows room for other ErrorLevels to be added in between.
 	#define HOTKEY_EL_MEM                99
 	static ResultType IfExpr(LPTSTR aExpr, IObject *aExprObj, ResultToken &aResultToken);
-	static ResultType Dynamic(LPTSTR aHotkeyName, LPTSTR aLabelName, LPTSTR aOptions
-		, IObject *aJumpToLabel, HookActionType aHookAction, ResultToken &aResultToken);
+	static ResultType Dynamic(LPTSTR aHotkeyName, LPTSTR aLabelName,
+ LPTSTR aOptions, IObject * aCallback, HookActionType aHookAction, ResultToken &aResultToken);
 
-	static Hotkey *AddHotkey(IObject *aJumpToLabel, HookActionType aHookAction, LPTSTR aName, bool aSuffixHasTilde);
+	static Hotkey *AddHotkey(IObject * aCallback, HookActionType aHookAction, LPTSTR aName, bool aSuffixHasTilde);
 	HotkeyVariant *FindVariant();
 	HotkeyVariant *AddVariant(IObject *aJumpToLabel, bool aSuffixHasTilde);
 	static bool PrefixHasNoEnabledSuffixes(int aVKorSC, bool aIsSC);
@@ -348,7 +348,7 @@ public:
 	static HotstringIDType sHotstringCountMax;
 	static UINT sEnabledCount; // v1.1.28.00: For performance, such as avoiding calling ToAsciiEx() in the hook.
 
-	LabelRef mJumpToLabel;
+	IObjectRef mCallback;
 	LPTSTR mName;
 	LPTSTR mString, mReplacement;
 	HotkeyCriterion *mHotCriterion;
@@ -371,16 +371,16 @@ public:
 	ResultType PerformInNewThreadMadeByCaller();
 	void DoReplace(LPARAM alParam);
 	static Hotstring *FindHotstring(LPTSTR aHotstring, bool aCaseSensitive, bool aDetectWhenInsideWord, HotkeyCriterion *aHotCriterion);
-	static ResultType AddHotstring(LPTSTR aName, LabelPtr aJumpToLabel, LPTSTR aOptions, LPTSTR aHotstring
-		, LPTSTR aReplacement, bool aHasContinuationSection, UCHAR aSuspend = FALSE);
+	static ResultType AddHotstring(LPTSTR aName, IObjectPtr aCallback, LPTSTR aOptions,
+ LPTSTR aHotstring, LPTSTR aReplacement, bool aHasContinuationSection, UCHAR aSuspend = FALSE);
 	static void ParseOptions(LPTSTR aOptions, int &aPriority, int &aKeyDelay, SendModes &aSendMode
 		, bool &aCaseSensitive, bool &aConformToCase, bool &aDoBackspace, bool &aOmitEndChar, SendRawType &aSendRaw
 		, bool &aEndCharRequired, bool &aDetectWhenInsideWord, bool &aDoReset, bool &aExecuteAction);
 	void ParseOptions(LPTSTR aOptions);
 
 	// Constructor & destructor:
-	Hotstring(LPTSTR aName, LabelPtr aJumpToLabel, LPTSTR aOptions, LPTSTR aHotstring, LPTSTR aReplacement
-		, bool aHasContinuationSection, UCHAR aSuspend);
+	Hotstring(LPTSTR aName, IObjectPtr aCallback, LPTSTR aOptions, LPTSTR aHotstring,
+ LPTSTR aReplacement, bool aHasContinuationSection, UCHAR aSuspend);
 	~Hotstring() {}  // Note that mReplacement is sometimes malloc'd, sometimes from SimpleHeap, and sometimes the empty string.
 
 	void *operator new(size_t aBytes) {return SimpleHeap::Malloc(aBytes);}
