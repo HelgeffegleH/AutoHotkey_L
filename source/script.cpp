@@ -5440,7 +5440,6 @@ ResultType Script::AddLine(ActionTypeType aActionType, LPTSTR aArg[], int aArgc,
 	else
 		do_update_labels = !mNoUpdateLabels;
 
-	Var *target_var;
 	DerefList deref;  // Will be used to temporarily store the var-deref locations in each arg.
 
 	ArgStruct *new_arg;  // We will allocate some dynamic memory for this, then hang it onto the new line.
@@ -13671,7 +13670,7 @@ int Script::FormatError(LPTSTR aBuf, int aBufSize, ResultType aErrorType, LPCTST
 {
 	TCHAR source_file[MAX_PATH * 2];
 	if (aLine && aLine->mFileIndex)
-s		sntprintf(source_file, _countof(source_file), _T(" in file \"%s\""), Line::sSourceFile[aLine->mFileIndex]); // removed #include since it may be SMODULES_INCLUDE_DIRECTIVE_NAME
+		sntprintf(source_file, _countof(source_file), _T(" in file \"%s\""), Line::sSourceFile[aLine->mFileIndex]); // removed #include since it may be SMODULES_INCLUDE_DIRECTIVE_NAME
 	else
 		*source_file = '\0'; // Don't bother cluttering the display if it's the main script file.
 

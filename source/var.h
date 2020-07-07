@@ -40,6 +40,7 @@ enum VarTypes
 , VAR_NORMAL // Most variables, such as those created by the user, are this type.
 , VAR_CONSTANT // or as I like to say, not variable.
 , VAR_VIRTUAL
+, VAR_REPLACED	// This variable should not be used, it has been replaced by another var. Used for SMODULES_IMPORT_VARS_DIRECTIVE_NAME. 
 , VAR_LAST_TYPE = VAR_VIRTUAL
 };
 
