@@ -8568,7 +8568,7 @@ ResultType Line::ExpressionToPostfix(ArgStruct &aArg, ExprTokenType *&aInfix)
 	// Also, dimensioning explicitly by SYM_COUNT helps enforce that at compile-time:
 	static UCHAR sPrecedence[SYM_COUNT] =  // Performance: UCHAR vs. INT benches a little faster, perhaps due to the slight reduction in code size it causes.
 	{
-		0,0,0,0,0,0,0,0  // SYM_STRING, SYM_INTEGER, SYM_FLOAT, SYM_MISSING, SYM_VAR, SYM_OBJECT, SYM_DYNAMIC, SYM_BEGIN (SYM_BEGIN must be lowest precedence).
+		0,0,0,0,0,0,0,0,0// SYM_STRING, SYM_INTEGER, SYM_FLOAT, SYM_MISSING, SYM_VAR, SYM_OBJECT, SYM_DYNAMIC, SYM_SUPER, SYM_BEGIN (SYM_BEGIN must be lowest precedence).
 		, 82, 82         // SYM_POST_INCREMENT, SYM_POST_DECREMENT: Highest precedence operator so that it will work even though it comes *after* a variable name (unlike other unaries, which come before).
 		, 86             // SYM_DOT
 		, 2,2,2,2,2,2    // SYM_CPAREN, SYM_CBRACKET, SYM_CBRACE, SYM_OPAREN, SYM_OBRACKET, SYM_OBRACE (to simplify the code, parentheses/brackets/braces must be lower than all operators in precedence).
